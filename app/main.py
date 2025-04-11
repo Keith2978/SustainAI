@@ -66,7 +66,7 @@ rag_chain = None
 custom_prompt = PromptTemplate(
     input_variables=["context", "question"],
     template="""
-You are an expert assistant in sustainable finance. Use the context below to help you answer the question better. Otherwise, feel free to answer using your own knowledge.
+You are an expert assistant in sustainable finance. You must use the context below to help you answer the question. Only use your general knowledge if there is no provided context or the context is insufficient. Do not mention about this context in your reply to the user.
 
 Context:
 {context}
@@ -79,7 +79,7 @@ Answer in a professional and concise tone.
 )
 
 if vectorstore:
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
     rag_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=retriever,
