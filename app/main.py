@@ -55,7 +55,7 @@ rag_chain = None
 custom_prompt = PromptTemplate(
     input_variables=["context", "question"],
     template="""
-You are an expert assistant in sustainable finance. Use the context below to answer user queries clearly and accurately.
+You are an expert assistant in sustainable finance. Use the context below to help you answer the question better. Otherwise, feel free to answer using your own knowledge.
 
 Context:
 {context}
