@@ -22,6 +22,9 @@ VECTORSTORE_PATH = "vectorstore"
 
 app = FastAPI()
 
+# In-memory storage for uploaded file names
+uploaded_files: List[str] = []
+
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
@@ -67,7 +70,6 @@ Answer in a professional and concise tone.
 """
 )
 
-
 if vectorstore:
     retriever = vectorstore.as_retriever()
     rag_chain = ConversationalRetrievalChain.from_llm(
@@ -93,12 +95,8 @@ async def chat(query: ChatQuery):
     return {"answer": result["answer"]}
 
 @app.get("/documents")
-async def list_documents():
-    folder = "temp_uploads"
-    if not os.path.exists(folder):
-        return {"documents": []}
-    files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
-    return {"documents": files}
+def list_documents():
+    return {"documents": uploaded_files}
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
@@ -121,7 +119,7 @@ async def upload_document(file: UploadFile = File(...)):
 
     vectorstore.save_local(VECTORSTORE_PATH)
 
-    # ✅ REBUILD rag_chain now that vectorstore is ready
+    # ✅ Rebuild the chain with updated vectorstore
     retriever = vectorstore.as_retriever()
     rag_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
@@ -130,7 +128,9 @@ async def upload_document(file: UploadFile = File(...)):
         return_source_documents=True
     )
 
+    # ✅ Track uploaded file in memory
+    uploaded_files.append(file.filename)
+
     os.remove(file_path)
 
     return {"message": f"'{file.filename}' added to the knowledge base."}
-
