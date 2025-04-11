@@ -84,7 +84,12 @@
     const fileInput = document.getElementById("file-upload");
     const uploadStatus = document.getElementById("upload-status");
 
-    uploadContainer.addEventListener("click", () => fileInput.click());
+    uploadContainer.addEventListener("click", (e) => {
+      if (!fileInput.files.length) {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });    
 
     uploadContainer.addEventListener("dragover", e => {
       e.preventDefault();
