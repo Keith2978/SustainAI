@@ -85,10 +85,8 @@
     const uploadStatus = document.getElementById("upload-status");
 
     uploadContainer.addEventListener("click", (e) => {
-      if (!fileInput.files.length) {
-        e.preventDefault();
-        fileInput.click();
-      }
+      fileInput.value = ""; // reset input so same file can be selected again
+      fileInput.click();
     });    
 
     uploadContainer.addEventListener("dragover", e => {
