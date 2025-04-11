@@ -13,6 +13,7 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      flex-direction: column;
     }
 
     #upload-container {
@@ -42,6 +43,29 @@
       font-size: 14px;
       color: green;
     }
+
+    #show-docs-btn {
+      margin-top: 30px;
+      padding: 10px 20px;
+      background-color: #004c8c;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #doc-list {
+      margin-top: 20px;
+      padding-left: 0;
+      max-width: 600px;
+      text-align: left;
+    }
+
+    #doc-list li {
+      list-style: none;
+      padding: 5px 0;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -51,6 +75,9 @@
     <input type="file" id="file-upload" accept="application/pdf" />
     <div id="upload-status"></div>
   </div>
+
+  <button id="show-docs-btn">📂 Show Uploaded Documents</button>
+  <ul id="doc-list"></ul>
 
   <script>
     const uploadContainer = document.getElementById("upload-container");
@@ -106,6 +133,30 @@
         uploadStatus.textContent = "❌ Upload failed. Try again.";
       }
     }
+
+    document.getElementById("show-docs-btn").addEventListener("click", async () => {
+      const listEl = document.getElementById("doc-list");
+      listEl.innerHTML = "⏳ Loading...";
+
+      try {
+        const res = await fetch("https://sustainai-wur0.onrender.com/documents");
+        const data = await res.json();
+
+        if (data.documents.length === 0) {
+          listEl.innerHTML = "<li>No documents found in the knowledge base.</li>";
+        } else {
+          listEl.innerHTML = "";
+          data.documents.forEach(doc => {
+            const li = document.createElement("li");
+            li.textContent = "📄 " + doc;
+            listEl.appendChild(li);
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        listEl.innerHTML = "<li>❌ Failed to load documents.</li>";
+      }
+    });
   </script>
 
 </body>
