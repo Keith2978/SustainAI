@@ -47,7 +47,7 @@ embedding = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 if os.path.exists(VECTORSTORE_PATH):
     vectorstore = FAISS.load_local(VECTORSTORE_PATH, embedding)
 else:
-    vectorstore = FAISS.from_documents([], embedding)
+    vectorstore = None  # Lazy init until first upload
 
 retriever = vectorstore.as_retriever()
 llm = ChatOpenAI(model_name="gpt-4o", openai_api_key=OPENAI_API_KEY)
@@ -82,9 +82,13 @@ class ChatQuery(BaseModel):
 
 @app.post("/chat")
 async def chat(query: ChatQuery):
-    result = rag_chain({"question": query.query, "chat_history": chat_history})
-    chat_history.append((query.query, result["answer"]))
-    return {"answer": result["answer"]}
+    if vectorstore is None:
+        return {"answer": "Knowledge base is empty. Please upload a document first."}
+    
+    response = rag_chain({"question": query.query, "chat_history": chat_history})
+    chat_history.append((query.query, response["answer"]))
+    return {"answer": response["answer"]}
+
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
@@ -99,7 +103,12 @@ async def upload_document(file: UploadFile = File(...)):
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunks = splitter.split_documents(documents)
 
-    vectorstore.add_documents(chunks)
+    global vectorstore
+    if vectorstore is None:
+        vectorstore = FAISS.from_documents(chunks, embedding)
+    else:
+        vectorstore.add_documents(chunks)
+
     vectorstore.save_local(VECTORSTORE_PATH)
     os.remove(file_path)
 
