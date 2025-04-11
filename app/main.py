@@ -49,8 +49,8 @@ if os.path.exists(VECTORSTORE_PATH):
 else:
     vectorstore = None  # Lazy init until first upload
 
-retriever = vectorstore.as_retriever()
 llm = ChatOpenAI(model_name="gpt-4o", openai_api_key=OPENAI_API_KEY)
+rag_chain = None
 
 custom_prompt = PromptTemplate(
     input_variables=["context", "question"],
@@ -67,12 +67,15 @@ Answer in a professional and concise tone.
 """
 )
 
-rag_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=retriever,
-    combine_docs_chain_kwargs={"prompt": custom_prompt},
-    return_source_documents=True
-)
+
+if vectorstore:
+    retriever = vectorstore.as_retriever()
+    rag_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=retriever,
+        combine_docs_chain_kwargs={"prompt": custom_prompt},
+        return_source_documents=True
+    )
 
 # In-memory chat history
 chat_history: List[tuple[str, str]] = []
@@ -82,12 +85,13 @@ class ChatQuery(BaseModel):
 
 @app.post("/chat")
 async def chat(query: ChatQuery):
-    if vectorstore is None:
-        return {"answer": "Knowledge base is empty. Please upload a document first."}
-    
-    response = rag_chain({"question": query.query, "chat_history": chat_history})
-    chat_history.append((query.query, response["answer"]))
-    return {"answer": response["answer"]}
+    if rag_chain is None:
+        return {"answer": "📂 No knowledge base found. Please upload a PDF first."}
+
+    result = rag_chain({"question": query.query, "chat_history": chat_history})
+    chat_history.append((query.query, result["answer"]))
+    return {"answer": result["answer"]}
+
 
 
 @app.post("/upload")
