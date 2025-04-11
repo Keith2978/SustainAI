@@ -48,11 +48,15 @@ def get_upload_page():
 # Load existing vector store or create empty
 embedding = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 if os.path.exists(VECTORSTORE_PATH):
-    vectorstore = FAISS.load_local(
-    VECTORSTORE_PATH,
-    embedding,
-    allow_dangerous_deserialization=True
-)
+    try:
+        vectorstore = FAISS.load_local(
+            VECTORSTORE_PATH,
+            embedding,
+            allow_dangerous_deserialization=True
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to load vectorstore: {e}")
+        vectorstore = None  # fallback to empty state
 else:
     vectorstore = None  # Lazy init until first upload
 
