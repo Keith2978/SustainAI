@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload Sustainability Docs</title>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #upload-container {
+      width: 90%;
+      max-width: 600px;
+      padding: 30px;
+      border: 2px dashed #004c8c;
+      border-radius: 12px;
+      background-color: #f0f8ff;
+      text-align: center;
+      font-size: 16px;
+      color: #004c8c;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #upload-container.dragover {
+      background-color: #d6eaff;
+    }
+
+    #file-upload {
+      display: none;
+    }
+
+    #upload-status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="upload-container">
+    <label for="file-upload" id="upload-label">📎 Drag & Drop your PDF here or click to upload</label>
+    <input type="file" id="file-upload" accept="application/pdf" />
+    <div id="upload-status"></div>
+  </div>
+
+  <script>
+    const uploadContainer = document.getElementById("upload-container");
+    const fileInput = document.getElementById("file-upload");
+    const uploadStatus = document.getElementById("upload-status");
+
+    uploadContainer.addEventListener("click", () => fileInput.click());
+
+    uploadContainer.addEventListener("dragover", e => {
+      e.preventDefault();
+      uploadContainer.classList.add("dragover");
+    });
+
+    uploadContainer.addEventListener("dragleave", () => {
+      uploadContainer.classList.remove("dragover");
+    });
+
+    uploadContainer.addEventListener("drop", e => {
+      e.preventDefault();
+      uploadContainer.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === "application/pdf") {
+        uploadPDF(file);
+      } else {
+        uploadStatus.textContent = "❌ Please upload a valid PDF.";
+      }
+    });
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+      if (file && file.type === "application/pdf") {
+        uploadPDF(file);
+      } else {
+        uploadStatus.textContent = "❌ Please upload a valid PDF.";
+      }
+    });
+
+    async function uploadPDF(file) {
+      uploadStatus.textContent = "⏳ Uploading...";
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("http://localhost:8000/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+        uploadStatus.textContent = result.message || "✅ Upload successful!";
+      } catch (err) {
+        console.error(err);
+        uploadStatus.textContent = "❌ Upload failed. Try again.";
+      }
+    }
+  </script>
+
+</body>
+</html>
