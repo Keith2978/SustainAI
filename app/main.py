@@ -107,13 +107,24 @@ async def upload_document(file: UploadFile = File(...)):
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunks = splitter.split_documents(documents)
 
-    global vectorstore
+    global vectorstore, rag_chain
     if vectorstore is None:
         vectorstore = FAISS.from_documents(chunks, embedding)
     else:
         vectorstore.add_documents(chunks)
 
     vectorstore.save_local(VECTORSTORE_PATH)
+
+    # ✅ REBUILD rag_chain now that vectorstore is ready
+    retriever = vectorstore.as_retriever()
+    rag_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm,
+        retriever=retriever,
+        combine_docs_chain_kwargs={"prompt": custom_prompt},
+        return_source_documents=True
+    )
+
     os.remove(file_path)
 
     return {"message": f"'{file.filename}' added to the knowledge base."}
+
