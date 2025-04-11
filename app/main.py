@@ -92,7 +92,13 @@ async def chat(query: ChatQuery):
     chat_history.append((query.query, result["answer"]))
     return {"answer": result["answer"]}
 
-
+@app.get("/documents")
+async def list_documents():
+    folder = "temp_uploads"
+    if not os.path.exists(folder):
+        return {"documents": []}
+    files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+    return {"documents": files}
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
