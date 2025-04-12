@@ -47,6 +47,7 @@ def get_upload_page():
 
 # Load existing vector store or create empty
 embedding = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
 if os.path.exists(VECTORSTORE_PATH):
     try:
         vectorstore = FAISS.load_local(
@@ -66,7 +67,10 @@ rag_chain = None
 custom_prompt = PromptTemplate(
     input_variables=["context", "question"],
     template="""
-You are an expert assistant in sustainable finance. You must use the context below to help you answer the question. Only use your general knowledge if there is no provided context or the context is insufficient. Do not mention about this context in your reply to the user.
+You are an expert assistant in sustainable finance. 
+You must use the context below to help you answer the question. 
+Only use your general knowledge if there is no provided context or the context is insufficient. 
+Do not mention about this context in your reply to the user.
 
 Context:
 {context}
@@ -96,7 +100,9 @@ class ChatQuery(BaseModel):
 @app.post("/chat")
 async def chat(query: ChatQuery):
     if rag_chain is None:
-        return {"answer": "📂 No knowledge base found. Please upload a PDF first."}
+        # No knowledge base, answer based purely on LLM general knowledge
+        result = llm({"question": query.query})
+        return {"answer": result['text']}
 
     result = rag_chain({"question": query.query, "chat_history": chat_history})
     chat_history.append((query.query, result["answer"]))
@@ -120,6 +126,7 @@ async def upload_document(file: UploadFile = File(...)):
     chunks = splitter.split_documents(documents)
 
     global vectorstore, rag_chain
+    
     if vectorstore is None:
         vectorstore = FAISS.from_documents(chunks, embedding)
     else:
