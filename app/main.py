@@ -101,14 +101,15 @@ class ChatQuery(BaseModel):
 async def chat(query: ChatQuery):
     # If there's no RAG chain (i.e., no documents uploaded), just use the LLM directly
     if rag_chain is None:
-        # Use the LLM directly for general knowledge (correct format)
-        response = llm.run(query.query)
-        return {"answer": response}
+        # Use the LLM directly for general knowledge
+        response = llm.invoke([query.query])  # Correct method to call LLM
+        return {"answer": response['choices'][0]['message']['content']}  # Extract content from the response
 
     # If there's a RAG chain, use it for context-based answers
     result = rag_chain({"question": query.query, "chat_history": chat_history})
     chat_history.append((query.query, result["answer"]))
     return {"answer": result["answer"]}
+
 
 @app.get("/documents")
 def list_documents():
