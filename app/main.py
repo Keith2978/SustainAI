@@ -101,10 +101,18 @@ class ChatQuery(BaseModel):
 async def chat(query: ChatQuery):
     # If there's no RAG chain (i.e., no documents uploaded), just use the LLM directly
     if rag_chain is None:
-        # Use the LLM directly for general knowledge
-        response = llm.invoke([{"role": "user", "content": query.query}])  # Correct way to invoke LLM
-        # Accessing the response properly by extracting the content
-        answer = response['choices'][0].message['content']  # This correctly accesses the 'content' attribute
+        # Maintain the conversation history dynamically
+        conversation = [{"role": "user", "content": query.query}]
+        
+        # Generate the model's response using the conversation history
+        response = llm.generate(conversation)
+        
+        # Extract the answer from the response
+        answer = response['text']
+        
+        # Add the assistant's response to the conversation history
+        chat_history.append((query.query, answer))
+        
         return {"answer": answer}
 
     # If there's a RAG chain, use it for context-based answers
